@@ -2,7 +2,7 @@
 ## Translate English to French using Tensorflow
 ### Project 4 of [Deep Learning Foundation](https://www.udacity.com/course/deep-learning-nanodegree-foundation--nd101)
 #### Perry Radau
-This deep learning neural network demonstrates an algorithm to translate English sentences into French. This is accomplished by having the network train with a corpus of English source texts and French target texts for training, but the final model (translator) could be applied to previously unseen English sentences.
+This deep learning neural network demonstrates an algorithm to translate English sentences into French. This is accomplished by having the network train with a corpus of English source texts and French target texts, but the final model (translator) could be applied to previously unseen English sentences.
 
 
 The network demonstrates key principles of deep learning:
