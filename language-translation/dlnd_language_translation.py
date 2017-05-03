@@ -32,7 +32,6 @@ view_sentence_range = (5, 10)
 DON'T MODIFY ANYTHING IN THIS CELL
 """
 import numpy as np
-''' TEMP
 print('Dataset Stats')
 word_list = source_text.split()
 print(word_list[:50])
@@ -50,7 +49,6 @@ print('\n'.join(source_text.split('\n')[view_sentence_range[0]:view_sentence_ran
 print()
 print('French sentences {} to {}:'.format(*view_sentence_range))
 print('\n'.join(target_text.split('\n')[view_sentence_range[0]:view_sentence_range[1]]))
-'''
 
 
 # ## Implement Preprocessing Function
@@ -74,17 +72,22 @@ def text_to_ids(source_text, target_text, source_vocab_to_int, target_vocab_to_i
     :param target_vocab_to_int: Dictionary to go from the target words to an id
     :return: A tuple of lists (source_id_text, target_id_text)
     """
-    # TODO: Implement Function
-    src_sentences = source_text.split('\n')    
-    source_id_text = []
-    for sentence in src_sentences:
-        source_id_text.append([source_vocab_to_int[word] for word in sentence.split()])
-    targ_sentences = target_text.split('\n')    
-    target_id_text = []
-    for sentence in targ_sentences:
-        #Note that we only add the End-of-sentence flag at the end of the *target* sentences.
-        sentence += ' <EOS>'
-        target_id_text.append([target_vocab_to_int[word] for word in sentence.split()])
+    # This was my solution that does not use list comprehension as extensively.
+    #     src_sentences = source_text.split('\n')    
+    #     source_id_text = []
+    #     for sentence in src_sentences:
+    #         source_id_text.append([source_vocab_to_int[word] for word in sentence.split()])
+    #     targ_sentences = target_text.split('\n')    
+    #     target_id_text = []
+    #     for sentence in targ_sentences:
+    #         #Note that we only add the End-of-sentence flag at the end of the *target* sentences.
+    #         sentence += ' <EOS>'
+    #         target_id_text.append([target_vocab_to_int[word] for word in sentence.split()])
+
+    source_sentences = [sentence for sentence in source_text.split('\n')]
+    target_sentences = [sentence + ' <EOS>' for sentence in target_text.split('\n')]
+    source_id_text= [[source_vocab_to_int[word] for word in sentence.split()] for sentence in source_sentences]
+    target_id_text = [[target_vocab_to_int[word] for word in sentence.split()] for sentence in target_sentences]
 
     #source_id_text is a list of sentences (lists) after conversion to integer IDs. Same for target_id_text.
     return source_id_text, target_id_text
@@ -105,6 +108,7 @@ tests.test_text_to_ids(text_to_ids)
 DON'T MODIFY ANYTHING IN THIS CELL
 """
 import os.path as path
+
 if path.isfile('preprocess.p') == False:
     print('preprocess_and_save_data')
     helper.preprocess_and_save_data(source_path, target_path, text_to_ids)
@@ -178,7 +182,6 @@ def model_inputs():
     """
     batch_size = None
     sequence_length = None
-    # TODO: Implement Function
     input_data = tf.placeholder(tf.int32, shape=[batch_size, sequence_length], name="input")
     targets = tf.placeholder(tf.int32, shape=[batch_size, sequence_length], name="targets")
     lr = tf.placeholder(tf.float32, name="learning_rate")
@@ -205,7 +208,6 @@ def process_decoding_input(target_data, target_vocab_to_int, batch_size):
     :param batch_size: Batch Size
     :return: Preprocessed target data
     """
-    # TODO: Implement Function
     ending = tf.strided_slice(target_data, [0, 0], [batch_size, -1], [1, 1])
     dec_input = tf.concat([tf.fill([batch_size, 1], target_vocab_to_int['<GO>']), ending], 1)
     
@@ -231,7 +233,6 @@ def encoding_layer(rnn_inputs, rnn_size, num_layers, keep_prob):
     :param keep_prob: Dropout keep probability
     :return: RNN state
     """
-    # TODO: Implement Function
     # Encoder
     # apply dropout with probability keep_prob to the basic LSTM cell.
     lstm_cell = tf.contrib.rnn.DropoutWrapper(tf.contrib.rnn.BasicLSTMCell(rnn_size), output_keep_prob=keep_prob)
@@ -264,7 +265,6 @@ def decoding_layer_train(encoder_state, dec_cell, dec_embed_input, sequence_leng
     :param keep_prob: Dropout keep probability
     :return: Train Logits
     """
-    # TODO: Implement Function
     # #### Decoder During Training
     # - Build the training decoder using [`tf.contrib.seq2seq.simple_decoder_fn_train`](https://www.tensorflow.org/api_docs/python/tf/contrib/seq2seq/simple_decoder_fn_train) and [`tf.contrib.seq2seq.dynamic_rnn_decoder`](https://www.tensorflow.org/api_docs/python/tf/contrib/seq2seq/dynamic_rnn_decoder).
     # - Apply the output layer to the output of the training decoder
@@ -309,7 +309,6 @@ def decoding_layer_infer(encoder_state, dec_cell, dec_embeddings, start_of_seque
     :param keep_prob: Dropout keep probability
     :return: Inference Logits
     """
-    # TODO: Implement Function
     # #### Decoder During Inference
     # - Reuse the weights the biases from the training decoder using [`tf.variable_scope("decoding", reuse=True)`](https://www.tensorflow.org/api_docs/python/tf/variable_scope)
     # - Build the inference decoder using [`tf.contrib.seq2seq.simple_decoder_fn_inference`](https://www.tensorflow.org/api_docs/python/tf/contrib/seq2seq/simple_decoder_fn_inference) and [`tf.contrib.seq2seq.dynamic_rnn_decoder`](https://www.tensorflow.org/api_docs/python/tf/contrib/seq2seq/dynamic_rnn_decoder).
@@ -317,9 +316,9 @@ def decoding_layer_infer(encoder_state, dec_cell, dec_embeddings, start_of_seque
     infer_decoder_fn = tf.contrib.seq2seq.simple_decoder_fn_inference(
         output_fn, encoder_state, dec_embeddings, start_of_sequence_id, end_of_sequence_id, 
         maximum_length, vocab_size)
-    #apply droput to decoder cell
-    drop_cell = tf.contrib.rnn.DropoutWrapper(dec_cell, keep_prob)
-    inference_logits, _, _ = tf.contrib.seq2seq.dynamic_rnn_decoder(drop_cell, infer_decoder_fn, scope=decoding_scope)
+
+    #NOTE: No need for dropout because for inference (prediction) we want to use the entire network.
+    inference_logits, _, _ = tf.contrib.seq2seq.dynamic_rnn_decoder(dec_cell, infer_decoder_fn, scope=decoding_scope)
 
     return inference_logits
 
@@ -357,8 +356,6 @@ def decoding_layer(dec_embed_input, dec_embeddings, encoder_state, vocab_size, s
     :param keep_prob: Dropout keep probability
     :return: Tuple of (Training Logits, Inference Logits)
     """
-    # TODO: Implement Function
-    
     # Decoder RNNs
     dec_cell = tf.contrib.rnn.BasicLSTMCell(rnn_size)
     drop_cell = tf.contrib.rnn.DropoutWrapper(dec_cell, keep_prob)
@@ -369,8 +366,8 @@ def decoding_layer(dec_embed_input, dec_embeddings, encoder_state, vocab_size, s
         # Training Decoder
         train_logits = decoding_layer_train(encoder_state, train_cell, dec_embed_input, sequence_length, decoding_scope,
             output_fn, keep_prob)
-    #reuse=True means we reuse the weights and biases from the training for the inference.
-    with tf.variable_scope("decoding", reuse=True) as decoding_scope:
+        #reuse_variables means we reuse the weights and biases from the training for the inference.
+        decoding_scope.reuse_variables()
         # Inference Decoder
         inference_logits = decoding_layer_infer(encoder_state, train_cell, dec_embeddings, target_vocab_to_int['<GO>'],
             target_vocab_to_int['<EOS>'], sequence_length-1, vocab_size, decoding_scope, output_fn, keep_prob)
@@ -456,16 +453,16 @@ tests.test_seq2seq_model(seq2seq_model)
 # In[14]:
 
 # Number of Epochs
-epochs = 4
+epochs = 8 
 # Batch Size
 batch_size = 128 #BEST 128. 1024 was worse
 # RNN Size
-rnn_size = 512 #BEST 512. 128 was worse
+rnn_size = 256 #BEST 512. 128 was worse
 # Number of Layers
-num_layers = 4 #BEST 4
+num_layers = 2 #BEST 4
 # Embedding Size
-encoding_embedding_size = 25 #BEST 25. 100 was worse
-decoding_embedding_size = 25 #same
+encoding_embedding_size = 100 #BEST 25. 100 was worse
+decoding_embedding_size = 100 #same
 # Learning Rate
 learning_rate = 0.001 #BEST 0.001.  0.01 was worse
 # Dropout Keep Probability
@@ -633,13 +630,14 @@ def sentence_to_seq(sentence, vocab_to_int):
     :param vocab_to_int: Dictionary to go from the words to an id
     :return: List of word ids
     """
-    # TODO: Implement Function
-    out_list = sentence.lower().split()
-    #ensure that any words not in vocabulary are replaced by '<UNK>' word (which exists in our vocab).
-    out_list = [word if word in vocab_to_int.keys() else '<UNK>' for word in out_list ]
-    #convert all the words to integer IDs.
-    out_list = [vocab_to_int[word] for word in out_list ]
-    
+    # My solution, without using the dictionary method get() that can set a default when a word is not found.
+#     out_list = sentence.lower().split()
+#     #ensure that any words not in vocabulary are replaced by '<UNK>' word (which exists in our vocab).
+#     out_list = [word if word in vocab_to_int.keys() else '<UNK>' for word in out_list ]
+#     #convert all the words to integer IDs.
+#     out_list = [vocab_to_int[word] for word in out_list ]
+
+    out_list = [vocab_to_int.get(word, vocab_to_int['<UNK>']) for word in sentence.lower().split()]    
     return out_list
 
 
@@ -652,7 +650,7 @@ tests.test_sentence_to_seq(sentence_to_seq)
 # ## Translate
 # This will translate `translate_sentence` from English to French.
 
-# In[20]:
+# In[ ]:
 
 translate_sentence = 'he saw a old yellow truck .'
 
@@ -690,7 +688,7 @@ print('  French Sentence: {}'.format(sent) )
 # ## Plotting the Training
 # This will plot the training & accuracy, and on a separate graph the loss vs batch steps (all epochs).
 
-# In[23]:
+# In[ ]:
 
 import matplotlib.pyplot as plt
 # plot loss
