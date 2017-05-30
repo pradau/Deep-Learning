@@ -27,3 +27,13 @@ Note that this project has fewer dependencies than those listed in that file.
 The project was developed with
 * Python 3.5.3
 * Tensorflow 1.0.0
+
+### References
+#### Key paper:
+
+[Unsupervised Representation Learning with DCGANs by Radford,Metz, Chintala](https://arxiv.org/abs/1511.06434)
+
+#### Key github implementation in tensorflow:
+
+[Taehoon Kim a.k.a. carpedm20](https://github.com/carpedm20/DCGAN-tensorflow)
+
